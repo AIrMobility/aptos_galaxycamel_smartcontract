@@ -192,8 +192,13 @@ module galaxycamel::marketplace{
         let token = token::withdraw_token(&resource_signer, token_id, 1);
         token::deposit_token(buyer, token);
         
-        // commision proc
-        let royalty_fee = price * get_royalty_fee_rate(token_id) ;
+        // royalty deduction
+        let royalty = token::get_royalty(token_id);
+        let royalty_fee = price * get_royalty_fee_rate(token_id);        
+        let royalty_payee = token::get_royalty_payee(&royalty);
+        coin::transfer<CoinType>(&resource_signer, royalty_payee, royalty_fee);
+
+        // marketfee deduction
         let market = borrow_global<Market>(market_address);
         let market_fee = price * market.fee_numerator / FEE_DENOMINATOR;
         let amount = price - market_fee - royalty_fee;
