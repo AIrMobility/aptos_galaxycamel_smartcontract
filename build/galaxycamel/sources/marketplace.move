@@ -155,17 +155,6 @@ module galaxycamel::marketplace{
         });
     }
 
-    // public fun get_bid_info<CoinType>(
-    //    bid_id: BidId
-    // ): (u64, u64) acquires BidRecords {
-    //     let bid_records = &mut borrow_global_mut<BidRecords<CoinType>>(bid_id.bidder).records;
-    //     assert!(table::contains(bid_records, bid_id), error::not_found(EBID_NOT_EXIST));
-
-    //     let bid = table::borrow(bid_records, bid_id);
-    //     (bid.offer_price, bid.expiration_sec)
-    // }
-
-
     public entry fun delist_token<CoinType>(seller: &signer, market_address:address, market_name: String, creator: address, collection: String, name: String, property_version: u64) acquires MarketEvents, Market, OfferStore {
         let market_id = MarketId { market_name, market_address };
         let token_id = token::create_token_id_raw(creator, collection, name, property_version);
@@ -208,10 +197,9 @@ module galaxycamel::marketplace{
         let price = table::borrow(&offer_store.offers, token_id).price;
         let seller = table::borrow(&offer_store.offers, token_id).seller;
         let buyer_addr = signer::address_of(buyer);
-        let required_balance = min_price * 1;
         
         assert!(seller != buyer_addr, ESELLER_CAN_NOT_BE_BUYER);
-        assert!(coin::balance<CoinType>(buyer_addr) >= required_balance, ENO_SUFFICIENT_FUND);
+        assert!(coin::balance<CoinType>(buyer_addr) >= price, ENO_SUFFICIENT_FUND);
 
         let resource_signer = get_resource_account_cap(market_address);
         // let resource_signer_addr = signer::address_of(&resource_signer);
