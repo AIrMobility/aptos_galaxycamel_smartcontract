@@ -155,7 +155,7 @@ module galaxycamel::marketplace{
         });
     }
 
-    public fun delist_token<CoinType>(seller: &signer, market_address:address, market_name: String, creator: address, collection: String, name: String, property_version: u64) acquires MarketEvents, Market, OfferStore {
+    public entry fun delist_token<CoinType>(seller: &signer, market_address:address, market_name: String, creator: address, collection: String, name: String, property_version: u64) acquires MarketEvents, Market, OfferStore {
         let market_id = MarketId { market_name, market_address };
         let token_id = token::create_token_id_raw(creator, collection, name, property_version);
         let offer_store = borrow_global_mut<OfferStore>(market_address);
@@ -194,7 +194,7 @@ module galaxycamel::marketplace{
         coin::extract(total_coin, fee)
     }
 
-    public fun buy_token<CoinType>(buyer: &signer, market_address: address, market_name: String, creator: address, collection: String, name: String, property_version: u64, price: u64, offer_id: u64) acquires MarketEvents, Market, OfferStore{
+    public entry fun buy_token<CoinType>(buyer: &signer, market_address: address, market_name: String, creator: address, collection: String, name: String, property_version: u64, price: u64, offer_id: u64) acquires MarketEvents, Market, OfferStore{
         let market_id = MarketId { market_name, market_address };
         let token_id = token::create_token_id_raw(creator, collection, name, property_version);
         let offer_store = borrow_global_mut<OfferStore>(market_address);
