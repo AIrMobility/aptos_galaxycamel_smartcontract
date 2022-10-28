@@ -239,8 +239,10 @@ module galaxycamel::marketplace{
         // let market = borrow_global<Market>(market_address);        
         // let market_fee = deduct_fee<CoinType>(&mut coins, market.fee_numerator, FEE_DENOMINATOR);
         // coin::deposit(market.fee_payee, market_fee);        
-        // // send back to seller left coins
-        // coin::deposit(seller, coins);
+        
+        
+        // send back to seller left coins        
+        coin::deposit(seller, coins);
 
         table::remove(&mut offer_store.offers, token_id);
         let market_events = borrow_global_mut<MarketEvents>(market_address);
