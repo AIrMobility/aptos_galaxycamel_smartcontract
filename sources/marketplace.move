@@ -208,7 +208,7 @@ module galaxycamel::marketplace{
         let price = table::borrow(&offer_store.offers, token_id).price;
         let seller = table::borrow(&offer_store.offers, token_id).seller;
         let buyer_addr = signer::address_of(buyer);
-        let required_balance = min_price * 1;
+        let required_balance = price * 1;
         
         assert!(seller != buyer_addr, ESELLER_CAN_NOT_BE_BUYER);
         assert!(coin::balance<CoinType>(buyer_addr) >= required_balance, ENO_SUFFICIENT_FUND);
