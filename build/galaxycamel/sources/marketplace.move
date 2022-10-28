@@ -229,7 +229,7 @@ module galaxycamel::marketplace{
         // marketfee deduction
         let market = borrow_global<Market>(market_address);        
         let market_fee = deduct_fee<CoinType>(&mut coins, market.fee_numerator, FEE_DENOMINATOR);
-        coin::deposit(market_address, market_fee);        
+        coin::deposit(market.fee_payee, market_fee);        
         // send back to seller left coins
         coin::deposit(seller, coins);
 
