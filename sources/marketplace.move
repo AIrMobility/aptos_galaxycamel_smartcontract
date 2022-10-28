@@ -10,7 +10,7 @@ module galaxycamel::marketplace{
     use aptos_std::table::{Self, Table};
     use aptos_token::token;
     // use aptos_token::token_coin_swap::{ list_token_for_swap, exchange_coin_for_token };
-
+    // coin pack: https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/framework/aptos-framework/sources/coin.move
     const ESELLER_CAN_NOT_BE_BUYER: u64 = 1;
     const ENO_AUTHROIZED_SELLER: u64 = 2;
     const ENO_SUFFICIENT_FUND: u64 = 3;
@@ -190,11 +190,12 @@ module galaxycamel::marketplace{
         coin::extract(total_coin, fee)
     }
 
-    public entry fun buy_token<CoinType>(buyer: &signer, market_address: address, market_name: String, creator: address, collection: String, name: String, property_version: u64, price: u64, offer_id: u64) acquires MarketEvents, Market, OfferStore{
+    public entry fun buy_token<CoinType>(buyer: &signer, market_address: address, market_name: String, creator: address, collection: String, name: String, property_version: u64, offer_id: u64) acquires MarketEvents, Market, OfferStore{
         let market_id = MarketId { market_name, market_address };
         let token_id = token::create_token_id_raw(creator, collection, name, property_version);
         let offer_store = borrow_global_mut<OfferStore>(market_address);
-        let seller = table::borrow(&offer_store.offers, token_id).seller;        
+        let price = table::borrow(&offer_store.offers, token_id).price;
+        let seller = table::borrow(&offer_store.offers, token_id).seller;
         let buyer_addr = signer::address_of(buyer);
         
         assert!(seller != buyer_addr, ESELLER_CAN_NOT_BE_BUYER);
