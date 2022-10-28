@@ -16,7 +16,7 @@ module galaxycamel::marketplace{
     const ENO_SUFFICIENT_FUND: u64 = 3;
 
 
-    const FEE_DENOMINATOR: u64 = 10000;
+    const FEE_DENOMINATOR: u64 = 100000;
 
     struct MarketId has store, drop, copy {
         market_name: String,
