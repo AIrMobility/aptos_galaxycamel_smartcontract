@@ -162,8 +162,10 @@ module galaxycamel::marketplace{
         let seller_store = table::borrow(&offer_store.offers, token_id).seller;                        
         assert!(signer::address_of(seller) != seller_store, ENO_AUTHROIZED_SELLER);
         
-        let resource_signer = get_resource_account_cap(market_address);        
-        token::direct_transfer(&resource_signer, seller, token_id, 1);             
+        let resource_signer = get_resource_account_cap(market_address);                
+        let token = token::withdraw_token(&resource_signer, token_id, 1);
+        token::deposit_token(seller, token);
+        // token::direct_transfer(&resource_signer, seller, token_id, 1);
         table::remove(&mut offer_store.offers, token_id);    
 
         let market_events = borrow_global_mut<MarketEvents>(market_address);
