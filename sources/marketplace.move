@@ -2,9 +2,10 @@ module galaxycamel::marketplace{
     use std::signer;
     use std::string::String;
     use aptos_framework::guid;
-    use aptos_framework::coin;
+    // use aptos_framework::coin;
     use aptos_framework::account;
     use aptos_framework::timestamp;
+    use aptos_framework::coin::{Self, Coin};
     use aptos_std::event::{Self, EventHandle};    
     use aptos_std::table::{Self, Table};
     use aptos_token::token;
@@ -179,7 +180,21 @@ module galaxycamel::marketplace{
         });    
     } 
 
-    public entry fun buy_token<CoinType>(buyer: &signer, market_address: address, market_name: String, creator: address, collection: String, name: String, property_version: u64, price: u64, offer_id: u64) acquires MarketEvents, Market, OfferStore{
+    fun deduct_fee<CoinType>(
+        total_coin: &mut Coin<CoinType>,
+        fee_numerator: u64,
+        fee_denominator: u64
+    ): Coin<CoinType> {
+        let value = coin::value(total_coin);
+        let fee = if (fee_denominator == 0) {
+            0
+        } else {
+            value * fee_numerator/ fee_denominator
+        };
+        coin::extract(total_coin, fee)
+    }
+
+    public fun buy_token<CoinType>(buyer: &signer, market_address: address, market_name: String, creator: address, collection: String, name: String, property_version: u64, price: u64, offer_id: u64) acquires MarketEvents, Market, OfferStore{
         let market_id = MarketId { market_name, market_address };
         let token_id = token::create_token_id_raw(creator, collection, name, property_version);
         let offer_store = borrow_global_mut<OfferStore>(market_address);
@@ -194,26 +209,30 @@ module galaxycamel::marketplace{
         // exchange_coin_for_token<CoinType>(buyer, price, signer::address_of(&resource_signer), creator, collection, name, property_version, 1);
         
         // need coin from buyer and should be deducted    
-        // let coins = coin::withdraw<CoinType>(buyer, price);        
+        let coins = coin::withdraw<CoinType>(buyer, price);        
         
         // send token from valut
         let token = token::withdraw_token(&resource_signer, token_id, 1);
         token::deposit_token(buyer, token);
         
         // royalty deduction
-        // let royalty = token::get_royalty(token_id);
+        let royalty = token::get_royalty(token_id);
         // let royalty_fee = price * get_royalty_fee_rate(token_id);        
-        // let royalty_payee = token::get_royalty_payee(&royalty);
-        // coin::transfer<CoinType>(&resource_signer, royalty_payee, royalty_fee);
+        let royalty_payee = token::get_royalty_payee(&royalty);
+        let royalty_coin = deduct_fee<CoinType>(
+            &mut coins,
+            token::get_royalty_numerator(&royalty),
+            token::get_royalty_denominator(&royalty)
+        );
+        
+        coin::deposit(royalty_payee, royalty_coin);
 
         // marketfee deduction
-        let market = borrow_global<Market>(market_address);
-        let market_fee = price * market.fee_numerator / FEE_DENOMINATOR;
-        let amount = price - market_fee - royalty_fee;
-        // let buyer_left = coins - amount
-        // send to buyer left
-        // coin::deposit(resource_signer_addr, buyer_left);
-        coin::transfer<CoinType>(&resource_signer, seller, amount);
+        let market = borrow_global<Market>(market_address);        
+        let market_fee = deduct_fee<CoinType>(&mut coins, market.fee_numerator, FEE_DENOMINATOR);
+        coin::deposit(market_address, market_fee);        
+
+        coin::deposit(seller, coins);
 
         table::remove(&mut offer_store.offers, token_id);
         let market_events = borrow_global_mut<MarketEvents>(market_address);
@@ -226,5 +245,5 @@ module galaxycamel::marketplace{
             timestamp: timestamp::now_microseconds(),
             offer_id
         });
-    }
+    }    
 }
