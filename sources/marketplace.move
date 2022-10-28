@@ -160,7 +160,7 @@ module galaxycamel::marketplace{
         let token_id = token::create_token_id_raw(creator, collection, name, property_version);
         let offer_store = borrow_global_mut<OfferStore>(market_address);
         let seller_store = table::borrow(&offer_store.offers, token_id).seller;                        
-        assert!(signer::address_of(seller) != seller_store, ENO_AUTHROIZED_SELLER);
+        assert!(signer::address_of(seller) == seller_store, ENO_AUTHROIZED_SELLER);
         
         let resource_signer = get_resource_account_cap(market_address);                
         let token = token::withdraw_token(&resource_signer, token_id, 1);
