@@ -155,12 +155,12 @@ module galaxycamel::marketplace{
         });
     }
 
-    public fun delist_token<CoinType>(seller: &signer, market_address:address, market_name: String, creator: address, collection: String, name: String, property_version: u64) acquires MarketEvents, Market, OfferStore {
+    public entry fun delist_token<CoinType>(seller: &signer, market_address:address, market_name: String, creator: address, collection: String, name: String, property_version: u64) acquires MarketEvents, Market, OfferStore {
         let market_id = MarketId { market_name, market_address };
         let token_id = token::create_token_id_raw(creator, collection, name, property_version);
         let offer_store = borrow_global_mut<OfferStore>(market_address);
         let seller_store = table::borrow(&offer_store.offers, token_id).seller;                        
-        assert!(signer::address_of(seller) != seller_store, ENO_AUTHROIZED_SELLER);
+        assert!(signer::address_of(seller) == seller_store, ENO_AUTHROIZED_SELLER);
         
         let resource_signer = get_resource_account_cap(market_address);
         // cancel_token_listing<CoinType>(&resource_signer, token_id, 1);
@@ -194,7 +194,7 @@ module galaxycamel::marketplace{
         coin::extract(total_coin, fee)
     }
 
-    public fun buy_token<CoinType>(buyer: &signer, market_address: address, market_name: String, creator: address, collection: String, name: String, property_version: u64, price: u64, offer_id: u64) acquires MarketEvents, Market, OfferStore{
+    public entry fun buy_token<CoinType>(buyer: &signer, market_address: address, market_name: String, creator: address, collection: String, name: String, property_version: u64, price: u64, offer_id: u64) acquires MarketEvents, Market, OfferStore{
         let market_id = MarketId { market_name, market_address };
         let token_id = token::create_token_id_raw(creator, collection, name, property_version);
         let offer_store = borrow_global_mut<OfferStore>(market_address);
@@ -223,15 +223,14 @@ module galaxycamel::marketplace{
             &mut coins,
             token::get_royalty_numerator(&royalty),
             token::get_royalty_denominator(&royalty)
-        );
-        
+        );        
         coin::deposit(royalty_payee, royalty_coin);
 
         // marketfee deduction
         let market = borrow_global<Market>(market_address);        
         let market_fee = deduct_fee<CoinType>(&mut coins, market.fee_numerator, FEE_DENOMINATOR);
         coin::deposit(market_address, market_fee);        
-
+        // send back to seller left coins
         coin::deposit(seller, coins);
 
         table::remove(&mut offer_store.offers, token_id);
