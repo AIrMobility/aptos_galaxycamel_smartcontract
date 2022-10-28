@@ -223,15 +223,14 @@ module galaxycamel::marketplace{
             &mut coins,
             token::get_royalty_numerator(&royalty),
             token::get_royalty_denominator(&royalty)
-        );
-        
+        );        
         coin::deposit(royalty_payee, royalty_coin);
 
         // marketfee deduction
         let market = borrow_global<Market>(market_address);        
         let market_fee = deduct_fee<CoinType>(&mut coins, market.fee_numerator, FEE_DENOMINATOR);
         coin::deposit(market_address, market_fee);        
-
+        // send back to seller left coins
         coin::deposit(seller, coins);
 
         table::remove(&mut offer_store.offers, token_id);
