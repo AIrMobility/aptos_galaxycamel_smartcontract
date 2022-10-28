@@ -12,6 +12,8 @@ module galaxycamel::marketplace{
 
     const ESELLER_CAN_NOT_BE_BUYER: u64 = 1;
     const ENO_AUTHROIZED_SELLER: u64 = 2;
+    const ENO_SUFFICIENT_FUND: u64 = 3;
+
 
     const FEE_DENOMINATOR: u64 = 10000;
 
@@ -183,11 +185,17 @@ module galaxycamel::marketplace{
         let offer_store = borrow_global_mut<OfferStore>(market_address);
         let seller = table::borrow(&offer_store.offers, token_id).seller;        
         let buyer_addr = signer::address_of(buyer);
+        
         assert!(seller != buyer_addr, ESELLER_CAN_NOT_BE_BUYER);
+        assert!(coin::balance<CoinType>(buyer_addr) >= price, ENO_SUFFICIENT_FUND);
 
         let resource_signer = get_resource_account_cap(market_address);
         // exchange_coin_for_token<CoinType>(buyer, price, signer::address_of(&resource_signer), creator, collection, name, property_version, 1);
-
+        
+        // need coin from buyer and should be deducted    
+        // let coins = coin::withdraw<CoinType>(buyer, price);
+        // coin::deposit(resource_signer, coins);
+        
         // send token from valut
         let token = token::withdraw_token(&resource_signer, token_id, 1);
         token::deposit_token(buyer, token);
