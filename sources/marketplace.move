@@ -190,26 +190,29 @@ module galaxycamel::marketplace{
         assert!(coin::balance<CoinType>(buyer_addr) >= price, ENO_SUFFICIENT_FUND);
 
         let resource_signer = get_resource_account_cap(market_address);
+        // let resource_signer_addr = signer::address_of(&resource_signer);
         // exchange_coin_for_token<CoinType>(buyer, price, signer::address_of(&resource_signer), creator, collection, name, property_version, 1);
         
         // need coin from buyer and should be deducted    
-        // let coins = coin::withdraw<CoinType>(buyer, price);
-        // coin::deposit(resource_signer, coins);
+        // let coins = coin::withdraw<CoinType>(buyer, price);        
         
         // send token from valut
         let token = token::withdraw_token(&resource_signer, token_id, 1);
         token::deposit_token(buyer, token);
         
         // royalty deduction
-        let royalty = token::get_royalty(token_id);
-        let royalty_fee = price * get_royalty_fee_rate(token_id);        
-        let royalty_payee = token::get_royalty_payee(&royalty);
-        coin::transfer<CoinType>(&resource_signer, royalty_payee, royalty_fee);
+        // let royalty = token::get_royalty(token_id);
+        // let royalty_fee = price * get_royalty_fee_rate(token_id);        
+        // let royalty_payee = token::get_royalty_payee(&royalty);
+        // coin::transfer<CoinType>(&resource_signer, royalty_payee, royalty_fee);
 
         // marketfee deduction
         let market = borrow_global<Market>(market_address);
         let market_fee = price * market.fee_numerator / FEE_DENOMINATOR;
         let amount = price - market_fee - royalty_fee;
+        // let buyer_left = coins - amount
+        // send to buyer left
+        // coin::deposit(resource_signer_addr, buyer_left);
         coin::transfer<CoinType>(&resource_signer, seller, amount);
 
         table::remove(&mut offer_store.offers, token_id);
