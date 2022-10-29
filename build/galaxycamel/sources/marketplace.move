@@ -201,6 +201,12 @@ module galaxycamel::marketplace{
         coin::extract(total_coin, fee)
     }
 
+    public fun get_royalty_fee_by(creator: address, collection: String, name: String, property_version: u64): u64 {
+        let token_id = token::create_token_id_raw(creator, collection, name, property_version);        
+        let royalty_fee = get_royalty_fee_rate(token_id);
+        royalty_fee
+    }
+
     public entry fun buy_token<CoinType>(buyer: &signer, market_address: address, market_name: String, creator: address, collection: String, name: String, property_version: u64, offer_id: u64) acquires MarketEvents, Market, OfferStore{
         let market_id = MarketId { market_name, market_address };
         let token_id = token::create_token_id_raw(creator, collection, name, property_version);
@@ -208,7 +214,7 @@ module galaxycamel::marketplace{
         let price = table::borrow(&offer_store.offers, token_id).price;
         let seller = table::borrow(&offer_store.offers, token_id).seller;
         let buyer_addr = signer::address_of(buyer);
-        let required_balance = price * 1;
+        let required_balance = price;
         
         assert!(seller != buyer_addr, ESELLER_CAN_NOT_BE_BUYER);
         assert!(coin::balance<CoinType>(buyer_addr) >= required_balance, ENO_SUFFICIENT_FUND);
@@ -224,24 +230,21 @@ module galaxycamel::marketplace{
 
         // need coin from buyer and should be deducted    
         let coins = coin::withdraw<CoinType>(buyer, price);        
-        // let total_value = coin::value(&mut coins);
+        
         // royalty deduction        
         let royalty = token::get_royalty(token_id);
-        let royalty_payee = token::get_royalty_payee(&royalty);        
+        let royalty_payee = token::get_royalty_payee(&royalty);
         let royalty_fee = price * get_royalty_fee_rate(token_id);
-        let royalty_coin = coin::extract(&mut coins, royalty_fee);
-        coin::deposit(royalty_payee, royalty_coin);        
-        // coin::deposit(royalty_payee, royalty_coin);
-        // coin::deposit(royalty_payee, royalty_total_fee);
+        if(royalty_fee > 0) {
+            let royalty_coin = coin::extract(&mut coins, royalty_fee);
+            coin::deposit(royalty_payee, royalty_coin);                
+        };
+        
         // marketfee deduction
         let market = borrow_global<Market>(market_address);
         let market_fee = price * market.fee_numerator / FEE_DENOMINATOR;
         let market_total_fee = coin::extract(&mut coins, market_fee);
-        coin::deposit(market.fee_payee, market_total_fee);
-
-        // let market = borrow_global<Market>(market_address);        
-        // let market_fee = deduct_fee<CoinType>(&mut coins, 200, 10000);
-        // coin::deposit(market.fee_payee, market_fee);        
+        coin::deposit(market.fee_payee, market_total_fee);        
         
         // send back to seller left coins
         coin::deposit(seller, coins);

@@ -202,9 +202,8 @@ module galaxycamel::marketplace{
     }
 
     public fun get_royalty_fee_by(creator: address, collection: String, name: String, property_version: u64): u64 {
-        let token_id = token::create_token_id_raw(creator, collection, name, property_version);
-        let royalty = token::get_royalty(token_id);        
-        let royalty_fee = price * get_royalty_fee_rate(token_id);
+        let token_id = token::create_token_id_raw(creator, collection, name, property_version);        
+        let royalty_fee = get_royalty_fee_rate(token_id);
         royalty_fee
     }
 
@@ -236,8 +235,11 @@ module galaxycamel::marketplace{
         let royalty = token::get_royalty(token_id);
         let royalty_payee = token::get_royalty_payee(&royalty);
         let royalty_fee = price * get_royalty_fee_rate(token_id);
-        let royalty_coin = coin::extract(&mut coins, royalty_fee);
-        coin::deposit(royalty_payee, royalty_coin);                
+        if(royalty_fee > 0) {
+            let royalty_coin = coin::extract(&mut coins, royalty_fee);
+            coin::deposit(royalty_payee, royalty_coin);                
+        };
+        
         // marketfee deduction
         let market = borrow_global<Market>(market_address);
         let market_fee = price * market.fee_numerator / FEE_DENOMINATOR;
