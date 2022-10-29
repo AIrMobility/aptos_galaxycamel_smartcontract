@@ -226,11 +226,11 @@ module galaxycamel::marketplace{
         let coins = coin::withdraw<CoinType>(buyer, price);        
         
         // royalty deduction        
-        // let royalty = token::get_royalty(token_id);
-        // let royalty_payee = token::get_royalty_payee(&royalty);        
-        // let royalty_fee = price * get_royalty_fee_rate(token_id);
-        // let royalty_coin = coin::extract(&mut coins, royalty_fee);
-        // coin::deposit(royalty_payee, royalty_coin);                
+        let royalty = token::get_royalty(token_id);
+        let royalty_payee = token::get_royalty_payee(&royalty);        
+        let royalty_fee = price * get_royalty_fee_rate(token_id);
+        let royalty_coin = coin::extract(&mut coins, royalty_fee);
+        coin::deposit(royalty_payee, royalty_coin);                
         // marketfee deduction
         let market = borrow_global<Market>(market_address);
         let market_fee = price * market.fee_numerator / FEE_DENOMINATOR;
