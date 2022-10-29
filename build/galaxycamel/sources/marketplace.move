@@ -224,7 +224,7 @@ module galaxycamel::marketplace{
 
         // need coin from buyer and should be deducted    
         let coins = coin::withdraw<CoinType>(buyer, price);        
-        let total_value = coin::value(&mut coins);
+        // let total_value = coin::value(&mut coins);
         // royalty deduction        
         let royalty = token::get_royalty(token_id);
         let royalty_payee = token::get_royalty_payee(&royalty);        
@@ -234,10 +234,10 @@ module galaxycamel::marketplace{
         // coin::deposit(royalty_payee, royalty_coin);
         // coin::deposit(royalty_payee, royalty_total_fee);
         // marketfee deduction
-        // let market = borrow_global<Market>(market_address);
-        // let market_fee = price * market.fee_numerator / FEE_DENOMINATOR;
-        // let market_total_fee = coin::extract(total_value, market_fee);
-        // coin::deposit(market.fee_payee, market_total_fee);
+        let market = borrow_global<Market>(market_address);
+        let market_fee = price * market.fee_numerator / FEE_DENOMINATOR;
+        let market_total_fee = coin::extract(&mut coins, market_fee);
+        coin::deposit(market.fee_payee, market_total_fee);
 
         // let market = borrow_global<Market>(market_address);        
         // let market_fee = deduct_fee<CoinType>(&mut coins, 200, 10000);
