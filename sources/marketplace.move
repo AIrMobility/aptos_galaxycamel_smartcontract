@@ -201,14 +201,6 @@ module galaxycamel::marketplace{
         coin::extract(total_coin, fee)
     }
 
-    public fun get_royalty_fee_by(creator: address, collection: String, name: String, property_version: u64): u64 {
-        let token_id = token::create_token_id_raw(creator, collection, name, property_version);
-        let royalty = token::get_royalty(token_id);
-        let royalty_payee = token::get_royalty_payee(&royalty);
-        let royalty_fee = price * get_royalty_fee_rate(token_id);
-        royalty_fee
-    }
-
     public entry fun buy_token<CoinType>(buyer: &signer, market_address: address, market_name: String, creator: address, collection: String, name: String, property_version: u64, offer_id: u64) acquires MarketEvents, Market, OfferStore{
         let market_id = MarketId { market_name, market_address };
         let token_id = token::create_token_id_raw(creator, collection, name, property_version);
