@@ -242,7 +242,7 @@ module galaxycamel::marketplace{
         // let market_fee = deduct_fee<CoinType>(&mut coins, 200, 10000);
         // coin::deposit(market.fee_payee, market_fee);        
         
-        // send back to seller left coins        
+        // send back to seller left coins
         coin::deposit(seller, coins);
 
         table::remove(&mut offer_store.offers, token_id);
