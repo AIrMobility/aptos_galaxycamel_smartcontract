@@ -81,18 +81,7 @@ module galaxycamel::marketplace{
     fun get_resource_account_cap(market_address : address) : signer acquires Market{
         let market = borrow_global<Market>(market_address);
         account::create_signer_with_capability(&market.signer_cap)
-    }
-
-    fun get_royalty_fee_rate(token_id: token::TokenId) : u64{
-        let royalty = token::get_royalty(token_id);
-        let royalty_denominator = token::get_royalty_denominator(&royalty);
-        let royalty_fee_rate = if (royalty_denominator == 0) {
-            0
-        } else {
-            token::get_royalty_numerator(&royalty) / token::get_royalty_denominator(&royalty)
-        };
-        royalty_fee_rate
-    }
+    }    
 
     public entry fun create_market<CoinType>(sender: &signer, market_name: String, fee_numerator: u64, fee_payee: address, initial_fund: u64) acquires MarketEvents, Market {        
         let sender_addr = signer::address_of(sender);
@@ -155,17 +144,6 @@ module galaxycamel::marketplace{
         });
     }
 
-    // public fun get_bid_info<CoinType>(
-    //    bid_id: BidId
-    // ): (u64, u64) acquires BidRecords {
-    //     let bid_records = &mut borrow_global_mut<BidRecords<CoinType>>(bid_id.bidder).records;
-    //     assert!(table::contains(bid_records, bid_id), error::not_found(EBID_NOT_EXIST));
-
-    //     let bid = table::borrow(bid_records, bid_id);
-    //     (bid.offer_price, bid.expiration_sec)
-    // }
-
-
     public entry fun delist_token<CoinType>(seller: &signer, market_address:address, market_name: String, creator: address, collection: String, name: String, property_version: u64) acquires MarketEvents, Market, OfferStore {
         let market_id = MarketId { market_name, market_address };
         let token_id = token::create_token_id_raw(creator, collection, name, property_version);
@@ -199,13 +177,7 @@ module galaxycamel::marketplace{
             value * fee_numerator/ fee_denominator
         };
         coin::extract(total_coin, fee)
-    }
-
-    public fun get_royalty_fee_by(creator: address, collection: String, name: String, property_version: u64): u64 {
-        let token_id = token::create_token_id_raw(creator, collection, name, property_version);        
-        let royalty_fee = get_royalty_fee_rate(token_id);
-        royalty_fee
-    }
+    }    
 
     public entry fun buy_token<CoinType>(buyer: &signer, market_address: address, market_name: String, creator: address, collection: String, name: String, property_version: u64, offer_id: u64) acquires MarketEvents, Market, OfferStore{
         let market_id = MarketId { market_name, market_address };
@@ -230,15 +202,7 @@ module galaxycamel::marketplace{
 
         // need coin from buyer and should be deducted    
         let coins = coin::withdraw<CoinType>(buyer, price);        
-        
-        // royalty deduction        
-        // let royalty = token::get_royalty(token_id);
-        // let royalty_payee = token::get_royalty_payee(&royalty);
-        // let royalty_fee = price * get_royalty_fee_rate(token_id);
-        // if(royalty_fee > 0) {
-        //     let royalty_coin = coin::extract(&mut coins, royalty_fee);
-        //     coin::deposit(royalty_payee, royalty_coin);                
-        // };
+    
 
         //royalty 2nd
         let royalty = token::get_royalty(token_id);
