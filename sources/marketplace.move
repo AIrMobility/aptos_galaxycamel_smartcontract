@@ -181,8 +181,7 @@ module galaxycamel::marketplace{
     public entry fun deposit_gov_token(govener: &signer, market_name: String, creator: address, collection: String, name: String, property_version: u64, amount:u64) {
         let market_id = MarketId { market_name, market_address: sender_addr };
         let token_id = token::create_token_id_raw(creator, collection, name, property_version);
-        let resource_signer = get_resource_account_cap(market_address);
-        
+        let resource_signer = get_resource_account_cap(market_address);        
         let token = token::withdraw_token(seller, token_id, amount);
         token::deposit_token(&resource_signer, token);
     }
