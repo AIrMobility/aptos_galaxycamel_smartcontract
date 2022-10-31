@@ -178,20 +178,20 @@ module galaxycamel::marketplace{
         }
     }
     
-    public entry fun deposit_gov_token(govener: &signer, market_name: String, creator: address, collection: String, name: String, property_version: u64, amount:u64) {
-        let market_id = MarketId { market_name, market_address: sender_addr };
+    public entry fun deposit_gov_token(govener: &signer, creator: address, collection: String, name: String, property_version: u64, amount:u64) acquires Market {
+        let sender_addr = signer::address_of(govener);        
         let token_id = token::create_token_id_raw(creator, collection, name, property_version);
-        let resource_signer = get_resource_account_cap(market_address);        
-        let token = token::withdraw_token(seller, token_id, amount);
+        let resource_signer = get_resource_account_cap(sender_addr);        
+        let token = token::withdraw_token(govener, token_id, amount);
         token::deposit_token(&resource_signer, token);
     }
 
-    public entry fun withdraw_gov_token(govener: &signer, market_name: String, creator: address, collection: String, name: String, property_version: u64) {
-        let market_id = MarketId { market_name, market_address: sender_addr };
+    public entry fun withdraw_gov_token(govener: &signer, creator: address, collection: String, name: String, property_version: u64, amount:u64) acquires Market {
+        let sender_addr = signer::address_of(govener);        
         let token_id = token::create_token_id_raw(creator, collection, name, property_version);
-        let resource_signer = get_resource_account_cap(market_address);
-        let token = token::withdraw_token(resource_signer, token_id, amount);
-        token::deposit_token(signer::address_of(govener);, token);
+        let resource_signer = get_resource_account_cap(sender_addr);
+        let token = token::withdraw_token(&resource_signer, token_id, amount);
+        token::deposit_token(govener, token);
     }
 
     public entry fun list_buy_token_offer<CoinType>(buyer: &signer, market_address:address, market_name: String, creator: address, collection_name: String, price: u64) acquires MarketEvents, Market, BuyOfferStore {
