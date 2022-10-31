@@ -379,7 +379,6 @@ module galaxycamel::marketplace{
         assert!(buyer != seller_addr, ESELLER_CAN_NOT_BE_BUYER);
 
         let resource_signer = get_resource_account_cap(market_address);
-
         let token_id = token::create_token_id_raw(creator, collection, name, property_version);        
         
         // send it to buyer
