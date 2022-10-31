@@ -394,18 +394,12 @@ module galaxycamel::marketplace{
                 
         table::remove(&mut offer_store.offers, offer_id);
         let market_events = borrow_global_mut<MarketEvents>(market_address);
-        // market_id: MarketId,
-        // token_id: token::TokenId,
-        // seller: address,
-        // buyer: address,
-        // price: u64,
-        // timestamp: u64,
-        // offer_id: u64
+        
         event::emit_event(&mut market_events.buy_token_events, BuyTokenEvent{
             market_id,
             token_id, 
             seller: seller_addr, 
-            buyer: buyer, 
+            buyer, 
             price,
             timestamp: timestamp::now_microseconds(),
             offer_id
