@@ -8,8 +8,7 @@ module galaxycamel::marketplace{
     use aptos_framework::coin::{Self, Coin};
     use aptos_std::event::{Self, EventHandle};    
     use aptos_std::table::{Self, Table};
-    use aptos_token::token;
-    // use aptos_token::token_coin_swap::{ list_token_for_swap, exchange_coin_for_token };
+    use aptos_token::token;    
     // coin pack: https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/framework/aptos-framework/sources/coin.move
     const ESELLER_CAN_NOT_BE_BUYER: u64 = 1;
     const ENO_AUTHROIZED_SELLER: u64 = 2;
@@ -178,6 +177,23 @@ module galaxycamel::marketplace{
             coin::transfer<CoinType>(sender, signer::address_of(&resource_signer), initial_fund);
         }
     }
+    
+    public entry fun deposit_gov_token(govener: &signer, market_name: String, creator: address, collection: String, name: String, property_version: u64, amount:u64) {
+        let market_id = MarketId { market_name, market_address: sender_addr };
+        let token_id = token::create_token_id_raw(creator, collection, name, property_version);
+        let resource_signer = get_resource_account_cap(market_address);
+        
+        let token = token::withdraw_token(seller, token_id, amount);
+        token::deposit_token(&resource_signer, token);
+    }
+
+    public entry fun withdraw_gov_token(govener: &signer, market_name: String, creator: address, collection: String, name: String, property_version: u64) {
+        let market_id = MarketId { market_name, market_address: sender_addr };
+        let token_id = token::create_token_id_raw(creator, collection, name, property_version);
+        let resource_signer = get_resource_account_cap(market_address);
+        let token = token::withdraw_token(resource_signer, token_id, amount);
+        token::deposit_token(signer::address_of(govener);, token);
+    }
 
     public entry fun list_buy_token_offer<CoinType>(buyer: &signer, market_address:address, market_name: String, creator: address, collection_name: String, price: u64) acquires MarketEvents, Market, BuyOfferStore {
         let market_id = MarketId { market_name, market_address };
@@ -322,7 +338,6 @@ module galaxycamel::marketplace{
         // need coin from buyer and should be deducted    
         let coins = coin::withdraw<CoinType>(buyer, price);
     
-
         //royalty 2nd
         let royalty = token::get_royalty(token_id);
         let royalty_payee = token::get_royalty_payee(&royalty);
