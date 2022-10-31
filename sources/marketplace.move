@@ -195,12 +195,14 @@ module galaxycamel::marketplace{
     }
 
     public entry fun list_buy_token_offer<CoinType>(buyer: &signer, market_address:address, market_name: String, creator: address, collection_name: String, price: u64) acquires MarketEvents, Market, BuyOfferStore {
+        
         let market_id = MarketId { market_name, market_address };
         let resource_signer = get_resource_account_cap(market_address);
         let buyer_addr = signer::address_of(buyer);
         let collection_id = create_collection_data_id(creator, collection_name);
         let guid = account::create_guid(&resource_signer);
         let offer_id = guid::creation_num(&guid);
+        token::opt_in_direct_transfer(buyer, true);
 
         let coins = coin::withdraw<CoinType>(buyer, price);
         coin::deposit(signer::address_of(&resource_signer), coins);
