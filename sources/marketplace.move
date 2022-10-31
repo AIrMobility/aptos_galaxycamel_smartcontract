@@ -410,7 +410,7 @@ module galaxycamel::marketplace{
         table::remove(&mut offer_store.offers, offer_id);
         let market_events = borrow_global_mut<MarketEvents>(market_address);
         
-        event::emit_event(&mut market_events.buy_token_events, BuyTokenEvent{
+        event::emit_event(&mut market_events.sell_token_events, SellTokenEvent{
             market_id,
             token_id, 
             seller: seller_addr, 
