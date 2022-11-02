@@ -28,7 +28,7 @@ async function main() {
     arguments: [
       MARKET_ADDRESS,
       MARKET_NAME,
-      15
+      19
     ],
   };
   const transaction = await client.aptosClient.generateTransaction(

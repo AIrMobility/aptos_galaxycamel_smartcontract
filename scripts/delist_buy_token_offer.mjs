@@ -32,9 +32,9 @@ async function main() {
       MARKET_NAME,
       "0x157ff13da599009db8f81b3981ed8e53b0a9bdc926045f54a2877f646901a169",
       "Elp nose",
-      "Nose #45",
+      "Nose #44",
       0,
-      15,
+      19,
     ],
   };
   console.log('delister:', account.address())
