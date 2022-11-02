@@ -37,10 +37,13 @@ module galaxycamel::marketplace{
         create_market_event: EventHandle<CreateMarketEvent>,
         list_sell_token_events: EventHandle<ListSellTokenEvent>,        
         delist_sell_token_events: EventHandle<DeListSellTokenEvent>,
+        list_buy_token_events: EventHandle<ListBuyTokenEvent>,        
+        delist_buy_token_events: EventHandle<DeListBuyTokenEvent>,
         list_collection_buy_token_events: EventHandle<ListCollectionBuyTokenEvent>,        
         delist_collection_buy_token_events: EventHandle<DeListCollectionBuyTokenEvent>,
         buy_token_events: EventHandle<BuyTokenEvent>,
         sell_token_events: EventHandle<SellTokenEvent>,
+        sell_collection_token_events: EventHandle<SellCollectionTokenEvent>,
     }
 
     struct SellOfferStore has key {
@@ -51,6 +54,18 @@ module galaxycamel::marketplace{
         market_id : MarketId,
         seller: address,
         price: u64,
+    }
+
+    struct BuyOfferStore has key {
+        offers: Table<u64, BuyOffer>
+    }
+
+    struct BuyOffer has drop, store {
+        market_id : MarketId,
+        buyer: address,
+        price: u64,
+        offer_id: u64,
+        token_id:token::TokenId
     }
 
     struct CollectionBuyOfferStore has key {
@@ -77,12 +92,29 @@ module galaxycamel::marketplace{
         price: u64,
         timestamp: u64,
         offer_id: u64
-    }
+    }    
 
     struct DeListSellTokenEvent has drop, store {
         market_id: MarketId,        
         token_id: token::TokenId,
         seller: address,
+        timestamp: u64     
+    }
+
+    struct ListBuyTokenEvent has drop, store {
+        market_id: MarketId,
+        token_id: token::TokenId,
+        offer_id: u64,
+        buyer: address,
+        price: u64,
+        timestamp: u64        
+    }
+
+    struct DeListBuyTokenEvent has drop, store {
+        market_id: MarketId,        
+        token_id: token::TokenId,
+        offer_id: u64,
+        buyer: address,
         timestamp: u64     
     }
 
@@ -123,6 +155,16 @@ module galaxycamel::marketplace{
         offer_id: u64
     }
 
+    struct SellCollectionTokenEvent has drop, store {
+        market_id: MarketId,
+        token_id: token::TokenId,
+        seller: address,
+        buyer: address,
+        price: u64,
+        timestamp: u64,
+        offer_id: u64
+    }
+
     struct CollectionId has store, copy, drop {
         creator: address,
         name: String,
@@ -148,10 +190,13 @@ module galaxycamel::marketplace{
                 create_market_event: account::new_event_handle<CreateMarketEvent>(sender),
                 list_sell_token_events: account::new_event_handle<ListSellTokenEvent>(sender),
                 delist_sell_token_events: account::new_event_handle<DeListSellTokenEvent>(sender),
+                list_buy_token_events: account::new_event_handle<ListBuyTokenEvent>(sender),
+                delist_buy_token_events: account::new_event_handle<DeListBuyTokenEvent>(sender),
                 list_collection_buy_token_events: account::new_event_handle<ListCollectionBuyTokenEvent>(sender),
                 delist_collection_buy_token_events: account::new_event_handle<DeListCollectionBuyTokenEvent>(sender),
                 buy_token_events: account::new_event_handle<BuyTokenEvent>(sender),
-                sell_token_events: account::new_event_handle<SellTokenEvent>(sender),                
+                sell_token_events: account::new_event_handle<SellTokenEvent>(sender),
+                sell_collection_token_events: account::new_event_handle<SellCollectionTokenEvent>(sender),
             });
         };
         if(!exists<SellOfferStore>(sender_addr)){
@@ -159,11 +204,18 @@ module galaxycamel::marketplace{
                 offers: table::new()
             });
         };
+        if(!exists<BuyOfferStore>(sender_addr)){
+            move_to(sender, BuyOfferStore{
+                offers: table::new()
+            });
+        };
+        
         if(!exists<CollectionBuyOfferStore>(sender_addr)){
             move_to(sender, CollectionBuyOfferStore{
                 offers: table::new()
             });
         };
+        
         if(!exists<Market>(sender_addr)){
             let (resource_signer, signer_cap) = account::create_resource_account(sender, x"01");
             token::initialize_token_store(&resource_signer);
@@ -203,6 +255,63 @@ module galaxycamel::marketplace{
         let token = token::withdraw_token(&resource_signer, gov_token_id, amount);
         token::deposit_token(govener, token);
     }
+
+    public entry fun list_buy_token_offer<CoinType>(buyer: &signer, market_address:address, market_name: String, creator: address, collection: String, name: String, property_version: u64, price: u64) acquires MarketEvents, Market, BuyOfferStore {        
+        let market_id = MarketId { market_name, market_address };
+        let resource_signer = get_resource_account_cap(market_address);
+        let buyer_addr = signer::address_of(buyer);        
+        let token_id = token::create_token_id_raw(creator, collection, name, property_version);
+        let guid = account::create_guid(&resource_signer);
+        let offer_id = guid::creation_num(&guid);
+        token::opt_in_direct_transfer(buyer, true);
+
+        let coins = coin::withdraw<CoinType>(buyer, price);
+        coin::deposit(signer::address_of(&resource_signer), coins);
+
+        let offer_store = borrow_global_mut<BuyOfferStore>(market_address);               
+        table::add(&mut offer_store.offers, offer_id, BuyOffer {
+            market_id, buyer: buyer_addr, price: price, offer_id, token_id
+        });
+        
+        let market_events = borrow_global_mut<MarketEvents>(market_address);        
+        
+        event::emit_event(&mut market_events.list_buy_token_events, ListBuyTokenEvent{
+            market_id,              
+            buyer: buyer_addr,
+            token_id: token_id, 
+            offer_id: offer_id,
+            price, 
+            timestamp: timestamp::now_microseconds()           
+        });
+    }
+
+    public entry fun delist_buy_token_offer<CoinType>(buyer: &signer, market_address:address, market_name: String, creator: address, collection: String, name: String, property_version: u64, offer_id: u64) acquires MarketEvents, Market, BuyOfferStore {
+        let market_id = MarketId { market_name, market_address };
+        let token_id = token::create_token_id_raw(creator, collection, name, property_version);
+        let offer_store = borrow_global_mut<BuyOfferStore>(market_address);        
+        let offer = table::borrow(&offer_store.offers, offer_id);
+        let buyer_store = offer.buyer;
+        let price = offer.price;
+        let buyer_addr = signer::address_of(buyer);        
+        assert!(buyer_addr == buyer_store, ENO_AUTHROIZED_SELLER);
+        
+        let resource_signer = get_resource_account_cap(market_address);
+        let coins = coin::withdraw<CoinType>(&resource_signer, price);
+        coin::deposit(buyer_addr, coins);
+
+        table::remove(&mut offer_store.offers, offer_id);    
+
+        let market_events = borrow_global_mut<MarketEvents>(market_address);
+        
+        event::emit_event(&mut market_events.delist_buy_token_events, DeListBuyTokenEvent{
+            market_id,                        
+            offer_id:offer_id,            
+            buyer: buyer_addr,             
+            token_id,
+            timestamp: timestamp::now_microseconds()            
+        });
+    }    
+
 
     public entry fun list_collection_buy_token_offer<CoinType>(buyer: &signer, market_address:address, market_name: String, creator: address, collection_name: String, price: u64) acquires MarketEvents, Market, CollectionBuyOfferStore {
         
@@ -387,7 +496,7 @@ module galaxycamel::marketplace{
         });
     }    
     // seller will sell nft, buyer offer will be matched with it and will be removed.
-    public entry fun sell_token<CoinType>(seller: &signer, market_address: address, market_name: String, creator: address, collection: String, name: String, property_version: u64, offer_id: u64) acquires MarketEvents, Market, CollectionBuyOfferStore{
+    public entry fun sell_token_collection<CoinType>(seller: &signer, market_address: address, market_name: String, creator: address, collection: String, name: String, property_version: u64, offer_id: u64) acquires MarketEvents, Market, CollectionBuyOfferStore{
         let market_id = MarketId { market_name, market_address };        
         let offer_store = borrow_global_mut<CollectionBuyOfferStore>(market_address);
         let price = table::borrow(&offer_store.offers, offer_id).price;
@@ -398,6 +507,62 @@ module galaxycamel::marketplace{
 
         let resource_signer = get_resource_account_cap(market_address);
         let token_id = token::create_token_id_raw(creator, collection, name, property_version);        
+        
+        // send it to buyer
+        token::transfer(seller, token_id, buyer, 1);
+
+        // seller get money from vault        
+        let coins = coin::withdraw<CoinType>(&resource_signer, price);
+        // deduction royalty
+        let royalty = token::get_royalty(token_id);
+        let royalty_payee = token::get_royalty_payee(&royalty);
+        let royalty_coin = deduct_fee<CoinType>(
+            &mut coins,
+            token::get_royalty_numerator(&royalty),
+            token::get_royalty_denominator(&royalty)
+        );
+        coin::deposit(royalty_payee, royalty_coin);    
+        
+        // deduction market fee
+        let market = borrow_global<Market>(market_address);
+        let market_fee = price * market.fee_numerator / FEE_DENOMINATOR;
+        let market_total_fee = coin::extract(&mut coins, market_fee);
+        coin::deposit(market.fee_payee, market_total_fee);
+        
+        // send seller left
+        coin::deposit(seller_addr, coins);
+                
+        table::remove(&mut offer_store.offers, offer_id);
+        // goven token dist        
+        let gov_token_id = token::create_token_id_raw(market.gov_token_creator, market.gov_token_collection, market.token_gov_token_name, market.gov_token_property_version);
+        let gov_token1 = token::withdraw_token(&resource_signer, gov_token_id, 1);
+        token::deposit_token(seller, gov_token1);        
+
+        let market_events = borrow_global_mut<MarketEvents>(market_address);
+        
+        event::emit_event(&mut market_events.sell_collection_token_events, SellCollectionTokenEvent{
+            market_id,
+            token_id, 
+            seller: seller_addr, 
+            buyer, 
+            price,
+            timestamp: timestamp::now_microseconds(),
+            offer_id
+        });
+    }
+
+     public entry fun sell_token<CoinType>(seller: &signer, market_address: address, market_name: String, offer_id: u64) acquires MarketEvents, Market, BuyOfferStore{
+        let market_id = MarketId { market_name, market_address };        
+        let offer_store = borrow_global_mut<BuyOfferStore>(market_address);
+        let offer = table::borrow(&offer_store.offers, offer_id);
+        let price = offer.price;
+        let buyer = offer.buyer;
+        let token_id = offer.token_id;        
+        let seller_addr = signer::address_of(seller);
+                
+        assert!(buyer != seller_addr, ESELLER_CAN_NOT_BE_BUYER);
+
+        let resource_signer = get_resource_account_cap(market_address);        
         
         // send it to buyer
         token::transfer(seller, token_id, buyer, 1);
