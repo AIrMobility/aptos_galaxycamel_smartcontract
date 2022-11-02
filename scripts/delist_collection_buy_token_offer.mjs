@@ -30,7 +30,7 @@ async function main() {
       MARKET_NAME,
       "0x157ff13da599009db8f81b3981ed8e53b0a9bdc926045f54a2877f646901a169",
       "Elp nose",
-      '12'
+      17
     ],
   };
   const transaction = await client.aptosClient.generateTransaction(

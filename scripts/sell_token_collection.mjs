@@ -32,7 +32,7 @@ async function main() {
       "Elp nose",
       "Nose #45",
       '0',
-      '11'
+      18
     ],
   };
   const transaction = await client.aptosClient.generateTransaction(
