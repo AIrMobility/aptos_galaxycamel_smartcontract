@@ -543,8 +543,8 @@ module galaxycamel::marketplace{
         if (price > 1000000) { // 0.01 APT    
             let gov_token_id = token::create_token_id_raw(market.gov_token_creator, market.gov_token_collection, market.token_gov_token_name, market.gov_token_property_version);
             let gov_token1 = token::withdraw_token(&resource_signer, gov_token_id, 1);
+            token::deposit_token(seller, gov_token1);        
         };
-        token::deposit_token(seller, gov_token1);        
 
         let market_events = borrow_global_mut<MarketEvents>(market_address);
         let collection_id = create_collection_data_id(creator, collection);
