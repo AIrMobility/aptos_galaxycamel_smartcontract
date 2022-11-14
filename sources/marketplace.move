@@ -237,7 +237,7 @@ module galaxycamel::marketplace{
         };
         if(initial_fund > 0){
             coin::transfer<CoinType>(sender, signer::address_of(&resource_signer), initial_fund);
-        }
+        };
     }
     
     public entry fun deposit_gov_token(govener: &signer, creator: address, collection: String, name: String, property_version: u64, amount:u64) acquires Market {
@@ -484,11 +484,11 @@ module galaxycamel::marketplace{
         table::remove(&mut offer_store.offers, token_id);
         
         // gov token dist 
-        
-        let gov_token_id = token::create_token_id_raw(market.gov_token_creator, market.gov_token_collection, market.token_gov_token_name, market.gov_token_property_version);
-        let gov_token1 = token::withdraw_token(&resource_signer, gov_token_id, 1);
-        token::deposit_token(buyer, gov_token1);        
-
+        if (price > 1000000) { // 0.01 APT
+            let gov_token_id = token::create_token_id_raw(market.gov_token_creator, market.gov_token_collection, market.token_gov_token_name, market.gov_token_property_version);
+            let gov_token1 = token::withdraw_token(&resource_signer, gov_token_id, 1);
+            token::deposit_token(buyer, gov_token1);        
+        };
         let market_events = borrow_global_mut<MarketEvents>(market_address);
         event::emit_event(&mut market_events.buy_token_events, BuyTokenEvent{
             market_id,
@@ -539,10 +539,11 @@ module galaxycamel::marketplace{
         coin::deposit(seller_addr, coins);
                 
         table::remove(&mut offer_store.offers, offer_id);
-        // goven token dist        
-        let gov_token_id = token::create_token_id_raw(market.gov_token_creator, market.gov_token_collection, market.token_gov_token_name, market.gov_token_property_version);
-        let gov_token1 = token::withdraw_token(&resource_signer, gov_token_id, 1);
-        
+        // goven token dist    
+        if (price > 1000000) { // 0.01 APT    
+            let gov_token_id = token::create_token_id_raw(market.gov_token_creator, market.gov_token_collection, market.token_gov_token_name, market.gov_token_property_version);
+            let gov_token1 = token::withdraw_token(&resource_signer, gov_token_id, 1);
+        };
         token::deposit_token(seller, gov_token1);        
 
         let market_events = borrow_global_mut<MarketEvents>(market_address);
@@ -597,10 +598,13 @@ module galaxycamel::marketplace{
         coin::deposit(seller_addr, coins);
                 
         table::remove(&mut offer_store.offers, offer_id);
+
+        if (price > 1000000) { // 0.01 APT
         // goven token dist        
-        let gov_token_id = token::create_token_id_raw(market.gov_token_creator, market.gov_token_collection, market.token_gov_token_name, market.gov_token_property_version);
-        let gov_token1 = token::withdraw_token(&resource_signer, gov_token_id, 1);
-        token::deposit_token(seller, gov_token1);        
+            let gov_token_id = token::create_token_id_raw(market.gov_token_creator, market.gov_token_collection, market.token_gov_token_name, market.gov_token_property_version);
+            let gov_token1 = token::withdraw_token(&resource_signer, gov_token_id, 1);
+            token::deposit_token(seller, gov_token1);        
+        };
 
         let market_events = borrow_global_mut<MarketEvents>(market_address);
         
@@ -614,4 +618,4 @@ module galaxycamel::marketplace{
             offer_id
         });
     }
-}
+} 
