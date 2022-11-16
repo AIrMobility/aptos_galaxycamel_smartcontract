@@ -138,6 +138,7 @@ module galaxycamel::marketplace{
     struct BuyTokenEvent has drop, store {
         market_id: MarketId,
         token_id: token::TokenId,
+        collection_id: CollectionId,
         seller: address,
         buyer: address,
         price: u64,
@@ -148,6 +149,7 @@ module galaxycamel::marketplace{
     struct SellTokenEvent has drop, store {
         market_id: MarketId,
         token_id: token::TokenId,
+        collection_id: CollectionId,
         seller: address,
         buyer: address,
         price: u64,
@@ -490,9 +492,11 @@ module galaxycamel::marketplace{
             token::deposit_token(buyer, gov_token1);        
         };
         let market_events = borrow_global_mut<MarketEvents>(market_address);
+        let collection_id = create_collection_data_id(creator, collection);
         event::emit_event(&mut market_events.buy_token_events, BuyTokenEvent{
             market_id,
-            token_id, 
+            token_id,
+            collection_id,
             seller, 
             buyer: buyer_addr, 
             price,
@@ -543,8 +547,8 @@ module galaxycamel::marketplace{
         if (price > 1000000) { // 0.01 APT    
             let gov_token_id = token::create_token_id_raw(market.gov_token_creator, market.gov_token_collection, market.token_gov_token_name, market.gov_token_property_version);
             let gov_token1 = token::withdraw_token(&resource_signer, gov_token_id, 1);
-        };
-        token::deposit_token(seller, gov_token1);        
+            token::deposit_token(seller, gov_token1);        
+        };  
 
         let market_events = borrow_global_mut<MarketEvents>(market_address);
         let collection_id = create_collection_data_id(creator, collection);
@@ -566,7 +570,8 @@ module galaxycamel::marketplace{
         let offer = table::borrow(&offer_store.offers, offer_id);
         let price = offer.price;
         let buyer = offer.buyer;
-        let token_id = offer.token_id;        
+        let token_id = offer.token_id;
+        let (creator, collection, _, _) = token::get_token_id_fields(&token_id);
         let seller_addr = signer::address_of(seller);
                 
         assert!(buyer != seller_addr, ESELLER_CAN_NOT_BE_BUYER);
@@ -607,10 +612,11 @@ module galaxycamel::marketplace{
         };
 
         let market_events = borrow_global_mut<MarketEvents>(market_address);
-        
+        let collection_id = create_collection_data_id(creator, collection);
         event::emit_event(&mut market_events.sell_token_events, SellTokenEvent{
             market_id,
             token_id, 
+            collection_id,
             seller: seller_addr, 
             buyer, 
             price,
