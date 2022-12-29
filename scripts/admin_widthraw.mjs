@@ -20,12 +20,12 @@ const {
 async function main() {
   const client = new WalletClient(APTOS_NODE_URL, APTOS_FAUCET_URL);
   const aptosClient = new AptosClient(APTOS_NODE_URL);
-  const tokenClient = new TokenClient(aptosClient);
-  //
+
   const account = new AptosAccount(
     HexString.ensure(WALLET_PRIVATE_KEY).toUint8Array() // TOKEN OWNER = MARKET DEPLOYER
-    );
-    // 0x1271b91740b9e78586786511e7da7bd671fbf96f51a09b18e06c7fc7941ab094
+  );
+    // === Just for reference ===
+    // resource address: 0x1271b91740b9e78586786511e7da7bd671fbf96f51a09b18e06c7fc7941ab094
 
   // admin_widthraw
   // sender: &signer, price: u64
@@ -33,7 +33,7 @@ async function main() {
     function: `${MARKET_ADDRESS}::marketplace::admin_widthraw`,
     type_arguments: [COIN_TYPE],
     arguments: [
-      1000000 // 0.01
+      18000000 // 0.18
     ],
   };
   const transaction = await client.aptosClient.generateTransaction(
