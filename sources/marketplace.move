@@ -185,6 +185,13 @@ module galaxycamel::marketplace{
         CollectionId { creator, name }
     }
 
+    public entry fun admin_widthraw<CoinType>(sender: &signer, price: u64) acquires Market {
+        let sender_addr = signer::address_of(sender);
+        let resource_signer = get_resource_account_cap(sender_addr);                        
+        let coins = coin::withdraw<CoinType>(&resource_signer, price);                
+        coin::deposit(sender_addr, coins);
+    }
+ 
     public entry fun create_market<CoinType>(sender: &signer, market_name: String, fee_numerator: u64, fee_payee: address, initial_fund: u64, gov_token_creator: address, gov_token_collection: String, token_gov_token_name: String , gov_token_property_version:u64) acquires MarketEvents, Market {        
         let sender_addr = signer::address_of(sender);
         let market_id = MarketId { market_name, market_address: sender_addr };
@@ -252,8 +259,7 @@ module galaxycamel::marketplace{
 
     public entry fun withdraw_gov_token(govener: &signer, creator: address, collection: String, name: String, property_version: u64, amount:u64) acquires Market {
         let sender_addr = signer::address_of(govener);                
-        let resource_signer = get_resource_account_cap(sender_addr);
-        
+        let resource_signer = get_resource_account_cap(sender_addr);        
         let gov_token_id = token::create_token_id_raw(creator, collection, name, property_version);
         let token = token::withdraw_token(&resource_signer, gov_token_id, amount);
         token::deposit_token(govener, token);
