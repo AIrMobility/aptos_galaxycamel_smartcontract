@@ -185,7 +185,7 @@ module galaxycamel::marketplace{
         CollectionId { creator, name }
     }
 
-    public entry fun admin_widthraw<CoinType>(sender: &signer, price: u64) acquires Market {
+    public entry fun admin_withdraw<CoinType>(sender: &signer, price: u64) acquires Market {
         let sender_addr = signer::address_of(sender);
         let resource_signer = get_resource_account_cap(sender_addr);                        
         let coins = coin::withdraw<CoinType>(&resource_signer, price);                

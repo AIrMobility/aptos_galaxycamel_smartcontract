@@ -24,3 +24,6 @@ NODE_ENV=development node sell_token.mjs
 <!-- gov token -->
 NODE_ENV=development node deposit_gov_token.mjs
 NODE_ENV=development node withdraw_gov_token.mjs
+
+<!-- admin -->
+NODE_ENV=development node admin_withdraw.mjs
