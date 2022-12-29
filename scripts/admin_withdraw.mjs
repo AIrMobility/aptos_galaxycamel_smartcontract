@@ -27,10 +27,10 @@ async function main() {
     );
     // 0x1271b91740b9e78586786511e7da7bd671fbf96f51a09b18e06c7fc7941ab094
 
-  // admin_withdraw
+  // admin_widthraw
   // sender: &signer, price: u64
   const payload = {
-    function: `${MARKET_ADDRESS}::marketplace::admin_withdraw`,
+    function: `${MARKET_ADDRESS}::marketplace::admin_widthraw`,
     type_arguments: [COIN_TYPE],
     arguments: [
       1000000 // 0.01
