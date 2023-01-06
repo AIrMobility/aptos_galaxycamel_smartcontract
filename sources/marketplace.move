@@ -191,8 +191,11 @@ module galaxycamel::marketplace{
         let coins = coin::withdraw<CoinType>(&resource_signer, price);                
         coin::deposit(sender_addr, coins);
     }
+    
  
-    public entry fun create_market<CoinType>(sender: &signer, market_name: String, fee_numerator: u64, fee_payee: address, initial_fund: u64, gov_token_creator: address, gov_token_collection: String, token_gov_token_name: String , gov_token_property_version:u64) acquires MarketEvents, Market {        
+    public entry fun create_market<CoinType>(sender: &signer, market_name: String, fee_numerator: u64, 
+        fee_payee: address, initial_fund: u64, gov_token_creator: address, gov_token_collection: String, token_gov_token_name: String , gov_token_property_version:u64) acquires MarketEvents, Market {        
+
         let sender_addr = signer::address_of(sender);
         let market_id = MarketId { market_name, market_address: sender_addr };
         if(!exists<MarketEvents>(sender_addr)){
@@ -324,7 +327,6 @@ module galaxycamel::marketplace{
         });
     }    
 
-
     public entry fun list_collection_buy_token_offer<CoinType>(buyer: &signer, market_address:address, market_name: String, creator: address, collection: String, price: u64) acquires MarketEvents, Market, CollectionBuyOfferStore {
         
         let market_id = MarketId { market_name, market_address };
@@ -381,7 +383,53 @@ module galaxycamel::marketplace{
         });
     }
 
-    public entry fun list_sell_token_offer<CoinType>(seller: &signer, market_address:address, market_name: String, creator: address, collection: String, name: String, property_version: u64, price: u64) acquires MarketEvents, Market, SellOfferStore {
+    public entry fun change_price<CoinType>(seller: &signer, market_address:address, market_name: String, creator: address, 
+        collection: String, name: String, property_version: u64, new_price: u64) acquires MarketEvents, Market, SellOfferStore {
+        
+        // delist 
+        let market_id = MarketId { market_name, market_address };
+        let token_id = token::create_token_id_raw(creator, collection, name, property_version);
+        let offer_store = borrow_global_mut<SellOfferStore>(market_address);
+        let seller_store = table::borrow(&offer_store.offers, token_id).seller;
+        let seller_addr = signer::address_of(seller);
+        assert!(seller_addr == seller_store, ENO_AUTHROIZED_SELLER);
+        
+        let resource_signer = get_resource_account_cap(market_address);                
+        let token = token::withdraw_token(&resource_signer, token_id, 1);
+        // token::deposit_token(seller, token);
+        token::deposit_token(&resource_signer, token);
+        // token::direct_transfer(&resource_signer, seller, token_id, 1);
+        table::remove(&mut offer_store.offers, token_id);
+        
+        // add new price
+        table::add(&mut offer_store.offers, token_id, SellOffer {
+            market_id, seller: seller_addr, price: new_price
+        });
+            
+        let market_events = borrow_global_mut<MarketEvents>(market_address);
+        event::emit_event(&mut market_events.delist_sell_token_events, DeListSellTokenEvent{
+            market_id,
+            token_id,
+            seller:seller_addr,
+            timestamp: timestamp::now_microseconds(),            
+        });
+
+        let guid = account::create_guid(&resource_signer);
+        event::emit_event(&mut market_events.list_sell_token_events, ListSellTokenEvent{
+            market_id, 
+            token_id, 
+            seller: seller_addr, 
+            price:new_price, 
+            timestamp: timestamp::now_microseconds(),
+            offer_id: guid::creation_num(&guid)
+        });      
+        
+    }
+
+    // list sell offer is sell your NFT
+    public entry fun list_sell_token_offer<CoinType>(seller: &signer, market_address:address, market_name: String, creator: address, 
+        collection: String, name: String, property_version: u64, price: u64) acquires MarketEvents, Market, SellOfferStore {
+
         let market_id = MarketId { market_name, market_address };
         let resource_signer = get_resource_account_cap(market_address);
         let seller_addr = signer::address_of(seller);
