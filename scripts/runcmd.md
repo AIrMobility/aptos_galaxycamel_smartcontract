@@ -5,6 +5,7 @@ NODE_ENV=development node create_market.mjs
 NODE_ENV=development node list_sell_token_offer.mjs
 NODE_ENV=development node delist_sell_token_offer.mjs
 NODE_ENV=development node query_listed_tokens.mjs
+NODE_ENV=development node change_price.mjs
 
 <!-- buy -->
 NODE_ENV=development node buy_token.mjs
